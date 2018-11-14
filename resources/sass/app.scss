@@ -1,14 +1,37 @@
 
 // Fonts
-@import url('https://fonts.googleapis.com/css?family=Nunito');
+//@import url('https://fonts.googleapis.com/css?family=Nunito');
+//@import url('https://fonts.googleapis.com/css?family=Montserrat:400,300,700');
 
 // Variables
-@import 'variables';
+//@import 'variables';
+// Bootswatch variables
+@import "~bootswatch/dist/spacelab/variables";
 
 // Bootstrap
 @import '~bootstrap/scss/bootstrap';
 
+// Bootswatch theme main CSS files
+@import "~bootswatch/dist/spacelab/bootswatch";
+
+// Font Awesome
+@import '~@fortawesome/fontawesome-free/css/all.min.css';
+
 .navbar-laravel {
   background-color: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+body {
+  background: no-repeat center center fixed;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  background-size: cover;
+  -o-background-size: cover;
+}
+
+.card .card-header img.card-icon {
+  height:50px;
+  width:50px;
+  margin-top:8px
 }

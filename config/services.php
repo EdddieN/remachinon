@@ -30,7 +30,7 @@ return [
     ],
 
     'stripe' => [
-        'model' => Remachinon\User::class,
+        'model' => Remachinon\Models\User::class,
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
     ],

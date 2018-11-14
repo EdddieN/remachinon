@@ -67,7 +67,8 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => Remachinon\User::class,
+            'model' => Remachinon\Models\User::class,
+
         ],
 
         // 'users' => [

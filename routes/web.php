@@ -11,6 +11,11 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', 'HomeController@index');
+
+Auth::routes();
+
+Route::resource('devices', 'DeviceController');
+
+Route::get('devices/{id}/connect', ['as' => 'devices.connect', 'uses' => 'DeviceTunnelController@connect']);
+Route::get('devices/{id}/disconnect', ['as' => 'devices.disconnect', 'uses' => 'DeviceTunnelController@disconnect']);

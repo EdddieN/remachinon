@@ -1,6 +1,6 @@
 <?php
 
-namespace Remachinon;
+namespace Remachinon\Models;
 
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -27,4 +27,13 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 'remember_token',
     ];
+
+    /**
+     * A user can register many devices
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function devices() {
+        return $this->hasMany('Remachinon\Models\Device');
+    }
 }

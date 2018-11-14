@@ -2,7 +2,7 @@
 
 namespace Remachinon\Http\Controllers\Auth;
 
-use Remachinon\User;
+use Remachinon\Models\User;
 use Remachinon\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -59,7 +59,7 @@ class RegisterController extends Controller
      * Create a new user instance after a valid registration.
      *
      * @param  array  $data
-     * @return \Remachinon\User
+     * @return \Remachinon\Models\User
      */
     protected function create(array $data)
     {
