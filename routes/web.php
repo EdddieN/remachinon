@@ -17,5 +17,7 @@ Auth::routes();
 
 Route::resource('devices', 'DeviceController');
 
-Route::get('devices/{id}/connect', ['as' => 'devices.connect', 'uses' => 'DeviceTunnelController@connect']);
-Route::get('devices/{id}/disconnect', ['as' => 'devices.disconnect', 'uses' => 'DeviceTunnelController@disconnect']);
+Route::get('devices/{id}/connect', ['as' => 'devices.connect', 'uses' => 'DeviceTunnelController@connect'])->middleware('auth');
+Route::get('devices/{id}/disconnect', ['as' => 'devices.disconnect', 'uses' => 'DeviceTunnelController@disconnect'])->middleware('auth');
+
+Route::get('tunnels/{id}/status', ['as' => 'tunnels.status', 'uses' => 'DeviceTunnelController@status'])->middleware('auth');

@@ -4,12 +4,15 @@
 
 @section('content')
     <div class="row justify-content-center">
-        <div class="col-lg-12">
+        <div class="col-8">
             <div class="card-deck">
+                {{ $token }}
                 @foreach($devices->all() as $device)
                     <div class="card text-white bg-primary border-dark rounded" style="margin:0.5rem">
                         <div class="card-header">
-                            <div class="float-right align-self-center"><img src="{{ asset('images/machinon_icon.png') }}" class="card-icon" alt="icon" /></div>
+                            <div class="float-right align-self-center">
+                                <img src="{{ asset('images/machinon_icon.png') }}"
+                                     class="card-icon" alt="icon" /></div>
                             <h4>{{ $device->name }}</h4>
                             <small class="card-subtitle mb-2 text-secondary">{{ $device->muid }}</small>
                         </div>
@@ -17,12 +20,24 @@
                             <p class="card-text">{{ $device->description }}</p>
                         </div>
                         <div class="card-footer text-muted">
-                            <a href="{{ route('devices.edit', ['id' => $device->id]) }}" class="btn btn-primary float-left" alt="Edit">
+                            <a href="{{ route('devices.edit', ['id' => $device->id]) }}"
+                               class="btn btn-primary float-left border border-dark">
                                 <i class="fas fa-pencil-alt"></i></a>
-                            <a href="{{ route('devices.show', ['id' => $device->id]) }}" class="btn btn-primary" alt="Show">
+                            <a href="{{ route('devices.show', ['id' => $device->id]) }}"
+                               class="btn btn-primary border border-dark">
                                 <i class="far fa-eye"></i></a>
-                            <a href="{{ route('devices.connect', ['id' => $device->device_tunnel->id]) }}" class="btn btn-success float-right" alt="Connect">
+                            <a href="{{ route('devices.connect', ['id' => $device->device_tunnel->id]) }}"
+                               class="btn btn-success float-right border border-dark" target="_blank">
                                 <i class="far fa-handshake"></i></a>
+                             <button type="button"
+                                     data-url="{{ route('devices.connect', ['id' => $device->device_tunnel->id]) }}"
+                                     data-poll="{{ route('api.tunnels.status', ['id' => $device->device_tunnel->id]) }}"
+                                     data-id="{{ $device->device_tunnel->id }}"
+                                     data-title="Connecting to {{ $device->name }}"
+                                     data-toggle="modal"
+                                     data-target="#connectModal"
+                                     class="btn btn-danger float-right border border-dark">
+                                <i class="far fa-handshake"></i></button>
                         </div>
                     </div>
                     @if($loop->iteration % 3 == 0)
@@ -34,7 +49,125 @@
     </div>
     <div class="row justify-content-center">
         <div class="col col-md-4">
-            <a href="{{ route('devices.create') }}" class="btn btn-primary btn-lg btn-block">{{ __('Add device') }}</a>
+            <a href="{{ route('devices.create') }}"
+               class="btn btn-primary btn-lg btn-block border border-dark">{{ __('Add device') }}</a>
         </div>
     </div>
+@endsection
+
+@section('modalboxes')
+    <div id="connectModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h4 class="modal-title text-white" id="modalTitle"></h4>
+                    <button type="button" class="close text-white" data-dismiss="modal">×</button>
+                </div>
+                <div class="modal-body text-center">
+                    <h1><i class="fas fa-cog fa-spin"></i></h1>
+                    <form id="machAction" action=""  method="post" target="_blank">
+                        <input id="machlToken" type="hidden" name="access_token" value="" />
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('javascript')
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $('#connectModal').on('show.bs.modal', function (e) {
+                let target = $(e.relatedTarget);
+                $("#connectModal").find("#modalTitle").text(target.data('title'));
+//                poll_tunnel(target);
+                tunstat(target);
+            });
+        });
+
+        {{-- Trying new ES6 function declarations here... ^_^ --}}
+
+        let poll_tunnel = (target) =>
+        {
+            $.ajax({
+                url: target.data('url'),
+                method: "GET",
+                dataType: "json",
+                success: function (result) {
+                    let url = '{{ config('app.remote_url') }}/' + result.response_body.uuid + '/';
+                    $("#machToken").attr('value', '');
+                    $("#machAction").attr('action', url).submit();
+                },
+                error: function (req, status, error) {
+                    console.log('calling poll tunnel at '+target.data('poll'));
+//                    poll_tunnel_status(target.data('poll'),0);
+                }
+            });
+        };
+
+        let tunstat = (target) =>
+        {
+            $.ajax({
+                url: target.data('poll')+'?scope=janderclander',
+                method: "GET",
+                dataType: "json",
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X_CSRF_TOKEN': $('meta[name=csrf-token]').attr("content")
+                },
+                success: function (result) {
+                    console.log(result)
+                },
+                error: function (req, status, error) {
+                    console.log(req);
+                }
+            });
+        };
+
+        let poll_tunnel_status = (check_url, tn) =>
+        {
+            pollingTm = null;
+            if (tn === 0) {
+                console.log('Tunnel polling started...');
+            }
+            $.ajax({
+                url: check_url,
+                method: "GET",
+                dataType: "json",
+                success: function (result) {
+                    //  loginWindow.location.href = tunnel_url;
+                    poll_tunnel_stop(pollingTm);
+                    console.log('received ' + result + '. redirecting to ' + tunnel_url);
+                    $("#machinongo").submit();
+                    $("#okmsg").hide();
+                    $("#clmsg").show();
+                },
+                error: function (req, status, error) {
+                    console.log('received ' + status + '. waiting for next try...');
+                    if (tn > 12) {
+                        poll_tunnel_stop(pollingTm);
+                        $("#okmsg").hide();
+                        $("#ermsg").show();
+                    } else {
+                        tn = tn + 1;
+                        pollingTm = setTimeout(function() {
+                            poll_tunnel_status(check_url, tunnel_url, tn);
+                        }, 5000);
+                    }
+                }
+            });
+        };
+
+        let poll_tunnel_stop = pollingTm =>
+        {
+            if (pollingTm !== null) clearTimeout(pollingTm);
+        };
+
+        let tunnel_close = () =>
+        {
+            $("#clbtn").attr('value','Please wait...').attr('disabled', true);
+            $("#machinonclose").submit();
+        };
+
+    </script>
 @endsection

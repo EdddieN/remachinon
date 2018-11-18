@@ -21,11 +21,6 @@ class CreateDeviceTunnelsTable extends Migration
             // Stores tunnel URL hash, the reverse SSH port and tunnel status
             $table->uuid('uuid')->unique()->nullable();
             $table->unsignedSmallInteger('port')->unique()->nullable();
-            // DeviceTunnel auth is made on remote device, but in case we need to do it
-            // through the server proxy we can use this to authenticate
-            // designed formerly for auth user (pin) & sha1 apache password (auth)
-            $table->string('pin')->unique()->nullable();
-            $table->string('auth')->nullable();
             $table->boolean('is_enabled')->default(false);
             $table->timestamps();
         });

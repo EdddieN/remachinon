@@ -19,7 +19,9 @@ class DeviceController extends Controller
     public function index()
     {
         $devices = auth()->user()->devices;
-        return view('devices.index', compact('devices'));
+        $token = \Auth::user()->token();
+
+        return view('devices.index', compact('devices', 'token'));
     }
 
     /**
@@ -30,26 +32,27 @@ class DeviceController extends Controller
     public function create()
     {
         $device = new Device();
-        return view('devices.create', compact('device'));
+        return view('devices.create', compact('device','token'));
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function store()
     {
         $attributes = request()->validate([
             'name' => ['required'],
-            'muid' => ['bail','required','regex:/^[a-f0-9]{12,19}$/i','max:19','unique:devices'],
+            'muid' => ['bail','required','regex:/^[a-f0-9]{12,19}$/i',
+                'max:19','unique:devices'],
             'description' => ['max:256']
         ]);
         $device = auth()->user()->devices()->create($attributes);
         // Creates the new Device's DeviceTunnel model automatically
         $device->tunnel()->create();
-        return redirect()->route('devices.index')->with('success','Device created successfully!');
+        return redirect()->route('devices.index')
+            ->with('success', __('Device created successfully!'));
     }
 
     /**
@@ -87,11 +90,13 @@ class DeviceController extends Controller
         $this->authorize('update', $device);
         $attributes = request()->validate([
             'name' => ['required'],
-            'muid' => ['bail','required','regex:/^[a-f0-9]{12,19}$/i','max:19','unique:devices,muid,'.$device->id],
+            'muid' => ['bail','required','regex:/^[a-f0-9]{12,19}$/i',
+                       'max:19','unique:devices,muid,'.$device->id],
             'description' => ['max:256']
         ]);
         $device->update($attributes);
-        return redirect()->route('devices.index')->with('success', 'Device updated successfully!');
+        return redirect()->route('devices.index')
+            ->with('success', __('Device updated successfully!'));
     }
 
     /**

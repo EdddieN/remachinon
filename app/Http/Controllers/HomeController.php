@@ -6,11 +6,6 @@ use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware('auth');
@@ -24,7 +19,7 @@ class HomeController extends Controller
     public function index()
     {
         if (\Auth::guest()) {
-            return view('login');
+            return view('auth.login');
         } else {
             return redirect()->route('devices.index');
         }

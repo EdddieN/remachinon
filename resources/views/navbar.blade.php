@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom border-dark">
     <a class="navbar-brand" href="{{ url('/') }}">
         <img src="{{ asset('images/machinon_logo.png') }}"
              alt="{{ config('app.name', 'Laravel') }}"

@@ -4,6 +4,7 @@ namespace Remachinon\Providers;
 
 use Remachinon\Models\Device;
 use Remachinon\Policies\DevicePolicy;
+use Laravel\Passport\Passport;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -27,6 +28,12 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(Gate $gate)
     {
         $this->registerPolicies();
+
+        Passport::routes();
+
+        Passport::tokensCan([
+            'connect-tunnel' => 'Connect to tunnels'
+        ]);
 
         // Ejemplo de before filter para comprobar isAdmins y cosas así
         // Si esto devuelve true no se comprueba la policy siquiera...

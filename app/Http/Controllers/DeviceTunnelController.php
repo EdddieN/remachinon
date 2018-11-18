@@ -2,144 +2,208 @@
 
 namespace Remachinon\Http\Controllers;
 
-use Remachinon\Models\Device;
 use Remachinon\Models\DeviceTunnel;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-
 use Bluerhinos\phpMQTT;
+use Carbon\Carbon;
+use Ramsey\Uuid\Uuid;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Storage;
+
+//use Symfony\Component\Process\Process; // Run system commands
+//use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class DeviceTunnelController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
 
     /**
      * Opens the tunnel with the remote device
      *
-     * @param DeviceTunnel $tunnel
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
      */
     public function connect($id)
     {
-        $device_tunnel = DeviceTunnel::find($id);
-        $this->authorize('connect', $device_tunnel);
-
-        // We need requesting user's API access token to send to Machinon and perform auto login.
-
-        // Comprueba que el tunel ya este abierto y simplemente recargar la pagina
-        // It may happen that somebody opens the tunnel while you already have the listing page loaded with the
-        // "open tunnel" icon. So if you click "open tunnel" the tunnel may have been already opened....
-        if ($device_tunnel->is_enabled &&
-            Carbon::parse($device_tunnel->updated_at)->addHours(2)->greaterThan(Carbon::now())) {
-                $retry = 1;
-                do {
-                    $fp = @fsockopen("127.0.0.1", $device_tunnel->port, $errno, $errstr, 30);
-                    if ($fp) {
-                        // Updating the updated_at field by just saving
-                        $device_tunnel->save();
-                        return true; // Show modalbox with link to tunnel or javascript to direct open
-                    } else {
-                        sleep (2);
-                        $retry++;
-                    }
-                } while ($retry <= 5); // Try connecting up to 5 times
+        try {
+            $device_tunnel = DeviceTunnel::findOrFail($id);
+            $this->authorize('connect', $device_tunnel);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Device not found'
+            ], 404);
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Unauthorized'
+            ], 401);
         }
 
-        // comprobar puerto disponible, elegido al azar pero cada puerto se testeara una sola vez
+        /**
+         * Checks tunnel is already enabled, if so, just reload the page
+         */
+
+        // It may happen that somebody opens the tunnel while you already have the listing page loaded with the
+        // "open tunnel" icon. So if you click "open tunnel" the tunnel may have been already opened....
+        if ($device_tunnel->is_enabled && Carbon::parse($device_tunnel->updated_at)
+                                                    ->addHours(2)
+                                                    ->greaterThan(now())) {
+            $retry = 1;
+            do {
+                $fp = @fsockopen("127.0.0.1", $device_tunnel->port, $errno, $errstr, 30);
+                if ($fp) {
+                    // Updating the updated_at field
+                    $device_tunnel->save(['updated_at' => now()]);
+                    return response()->json([
+                        'code' => 'success',
+                        'response_body' => [
+                            'uuid' => $device_tunnel->uuid
+                        ],
+                        'message' => null
+                    ]);
+                } else {
+                    sleep (1);
+                    $retry++;
+                }
+            } while ($retry <= 5); // Try connecting up to 5 times
+            // Tunnel is setup but remote device didn't confirmed tunnel yet, send timeout and let ajax try again
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Operation timeout'
+            ], 408);
+        }
+
+        /**
+         * Choose the tunnel port
+         */
+
         $tunnel_ports = array(10001, 30000);
         $port_found = false;
         $tryout_counter = 0;
-/////// FOR DEBUG ON MAC USE THIS DEMO LIST
-        $used_ports = array(48000,48001,199,48007,48008,48009,3306,49197,8400,59410,8402,22,47768,25,1311,80,22,25,443);
-/////// COMMENT THIS ON MACS- NOT WORK THE SAME
-        // exec("netstat -lnt | awk '{print $4}' | sed -e 's/.*://'", $used_ports);
+        // Command to read used ports is different in each OS
+        // @todo \PROCESS should work but returns cwd errors. Using exec(). I'll fix it later
+        switch(config('app.os')) {
+            case 'windows': // @todo Read used ports in windows
+                break;
+            case 'osx': // Read used ports in osx
+                exec("lsof -i -n -P | grep -i \"listen\" | awk '{print $9}' | sed -e 's/.*://'", $used_ports, $exec_out);
+                // We can use both options, lsof is quicker
+//                $process = new Process("netstat -anp tcp | grep -i 'listen' | awk '{print $4}' | sed -e 's/.*\.//'");
+//                $process = new Process("lsof -i -n -P | grep -i 'listen' | awk '{print $9}' | sed -e 's/.*://'");
+                break;
+            case 'linux': // Read used ports in linux
+            default:
+                exec("netstat -lnt | awk '{print $4}' | sed -e 's/.*://'", $used_ports, $exec_out);
+    //            $process = new Process("netstat -lnt | awk '{print $4}' | sed -e 's/.*://'");
+                break;
+        }
+        if (!empty($exec_out)) {
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Connection timed out'
+            ], 408);
+        }
+        // @todo Uncomment this block when enabling \PROCESS
+//        if ($process) {
+//            try {
+//                $process->mustRun();
+//                $used_ports = $process->getOutput();
+//            } catch (ProcessFailedException $e) {
+//                return back()->with('error', $e->getMessage());
+//            }
+//        }
         $used_ports = array_unique($used_ports, SORT_STRING);
-        // Check port range to find one free
-        $this->Machinonip = new Machinonip();
+
+        /**
+         * Check port range to find one free
+         */
+
         do {
+            // Choose random port and check
             $next_port = rand($tunnel_ports[0], $tunnel_ports[1]);
-            $tunnel_used = $this->Machinonip->findFirstBy('tunnel_port', $next_port);
-            if ($tunnel_used) {
-            } else if (!in_array($next_port, $used_ports)) {
-                // Tries to connect to port to be 100% sure
-                $fp = @fsockopen("127.0.0.1", $next_port, $errno, $errstr, 30);
-                // If TCP connection fails, port is available
-                if (!$fp) {
-                    $this->tunnel_port = $next_port;
-                    $port_found = true;
-                }
-            } else {
+            if (DeviceTunnel::where('port', $next_port)->first()
+                    || in_array($next_port, $used_ports)) {
+                // Port in use, add to the block list and try again
                 array_push($used_ports, $next_port);
                 $tryout_counter++;
+            } else {
+                // Tries to connect to port. If TCP connection fails, port is available
+                if (!@fsockopen("127.0.0.1", $next_port, $errno, $errstr, 10)) {
+                    $port_found = $next_port;
+                }
             }
         } while (!$port_found && $tryout_counter > 60); // After 60 tries, something happens....
         // No ports available, return error...
         if (!$port_found)  {
-            $this->flash_custom('Unable to open link - Please try again in a minute', 'error');
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Unable to establish connection'
+            ], 408);
         }
-        // Generating new hash
-        $this->tunnel_hash = Le::generate_hash(8); // Will return a 16 length hash
-        $this->tunnel_pin = Le::generate_pin(6); // Will return a 6 digit pin length hash
-        // Remove old hashes using the same port, as everything must be unique...
-        $this->Machinonip->destroyAll(array('device_id = ? OR tunnel_port = ? OR tunnel_hash = ?',
-            $this->device->id, $this->tunnel_port, $this->tunnel_hash));
-        // crear registro en machinonip con deviceid, hash, pin y puerto
-        $this->machinonip = new Machinonip();
-        $this->machinonip->setAttributes(array(
-            'device_id' => $this->device->id,
-            'tunnel_hash' => $this->tunnel_hash,
-            // Apache htpasswd encryption - http://httpd.apache.org/docs/2.2/misc/password_encryptions.html
-            'tunnel_pin' => $this->tunnel_pin,
-            'tunnel_auth' => base64_encode(sha1($this->tunnel_pin, TRUE)), // prefix '{SHA}' for apache auth deprecated
-            'tunnel_port' => $this->tunnel_port,
-            'updated_at' => Ak::getDate()
-        ));
-        if (!$this->machinonip->save()) {
-            $this->flash_custom('Error 001 establishing the link - Contact Logic Energy', 'error');
-        }
-        // Updating the domoproxy file
+
+        $device_tunnel->port = $port_found;
+        $device_tunnel->uuid = UUID::uuid4();
+
+        // Before saving, reset other tunnels using the same port/uuid
+        DeviceTunnel::where('device_id', '<>', $device_tunnel->device_id)
+                    ->where('port', $device_tunnel->port)
+                    ->orWhere('uuid', $device_tunnel->uuid)
+                    ->update(DeviceTunnel::$defaults);
+
+        // All clear! Update tunnel record
+        $device_tunnel->save();
+
+        /**
+         * Updating the domoproxy file
+         */
+
         $newset = '';
-        $domoproxy_file = $_SERVER['DOCUMENT_ROOT'].DS.'..'.DS.'domoproxy';
-        // Removing any hash using the same current port
-        $handle = fopen($domoproxy_file, 'r');
-        while (!feof($handle)) {
-            $line = fgets($handle, 4096);
-            if (!empty($line) && !preg_match("/(?:{$this->tunnel_hash}|\\s{$this->tunnel_port})/", $line)) {
-                $newset .= $line;
+        if (!Storage::exists('domoproxy')) {
+            Storage::put('domoproxy',
+                "# -------------------------------------------------- \n" .
+                "# This file is automatically generated by Remachinon \n" .
+                "# Do not edit unless you know what you're doing      \n" .
+                "# -------------------------------------------------- \n");
+        }
+        // @todo I don't like doing this way... probably will go back to ol' fopen file handling (@LeSENSE)...
+        $domoproxy = explode("\n",Storage::get('domoproxy'));
+        // Removing any duplicated UUID using the current port
+        foreach ($domoproxy as $line) {
+            if (!empty($line) && !preg_match("/(?:{$device_tunnel->uuid}|\\s{$device_tunnel->port})/", $line)) {
+                $newset .= $line . "\n";
             }
         }
-        fclose($handle);
-        $handle = fopen($domoproxy_file, 'w');
-        // Add cleanup set content to domoproxy file
-        fwrite($handle, $newset);
-        // Add the current line to domoproxy file
-        fwrite($handle, $this->tunnel_hash . ' ' . $this->tunnel_port . "\n");
-        fclose($handle);
-        // enviar mensaje al mqtt
-        require(AK_APP_VENDOR_DIR.DS.'phpMQTT'.DS.'phpMQTT.php');
-        $server = LE_MQTT_SERVER_HOST;
-        $port = LE_MQTT_SERVER_PORT;
-        $username = LE_MQTT_SERVER_USER;
-        $password = LE_MQTT_SERVER_PASS;
-        $client_id = LE_MQTT_SERVER_CLIENTID;
-        $mqtt = new \Bluerhinos\phpMQTT($server, $port, $client_id);
+        $newset .= $device_tunnel->uuid . ' ' . $device_tunnel->port . "\n";
+        // Add the current set to domoproxy file
+        Storage::put('domoproxy', $newset);
+
+        /**
+         * Sending the MQTT message to the Machinon Agent
+         */
+
+        $server = config('services.mqtt.host');
+        $port = config('services.mqtt.port');
+        $username = config('services.mqtt.username');
+        $password = config('services.mqtt.password');
+        $client_id = config('services.mqtt.client_id');
+        $mqtt = new phpMQTT($server, $port, $client_id);
         // MQTT Topic
-        $mqtt_topic = "remote/" . strtolower($this->device->mac_address);
-        $mqtt_mesagge = json_encode(array(
+        $mqtt_topic = "remote/" . $device_tunnel->device->muid;
+        $mqtt_mesagge = json_encode([
             'tunnel' => 'open',
-            'port' => (string)$this->tunnel_port,
-            'device_id' => $this->device->id
-        ));
+            'port' => (string)$device_tunnel->port,
+            'device_id' => $device_tunnel->id
+        ]);
         // Try to send the message up to 5 times...
         $tryagain = 1;
         do {
             if ($mqtt->connect(true, NULL, $username, $password)) {
-                if (LE_SERVER_HOST != 'dev.darkase.org') {
-                    $mqtt->publish($mqtt_topic, $mqtt_mesagge, 0);
-                }
+                $mqtt->publish($mqtt_topic, $mqtt_mesagge, 0);
                 $mqtt->close();
                 $tryagain = 10;
             } else {
@@ -148,20 +212,215 @@ class DeviceTunnelController extends Controller
             }
         } while ($tryagain <= 5);
 
-
-        return back()->with('error', 'Unable to establish tunnel');
+        // All okay, sending uuid and leaving the rest of the asking to status()
+        return response()->json([
+            'code' => 'success',
+            'response_body' => [
+                'uuid' => $device_tunnel->uuid
+            ],
+            'message' => null
+        ]);
     }
 
     /**
      * Closes the tunnel with the remote device
      *
-     * @param DeviceTunnel $tunnel
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
      */
     public function disconnect($id)
     {
-        $device_tunnel = DeviceTunnel::find($id);
-        $this->authorize('connect', $device_tunnel);
-        return "hola ke ase";
+        // This forces the RestTrait::isApiAction() method handle exception as API responses (too shabby?)
+        try {
+            $device_tunnel = DeviceTunnel::findOrFail($id);
+            $this->authorize('connect', $device_tunnel);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Device not found'
+            ], 404);
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        /**
+         * Sending the MQTT close message
+         */
+
+        $server = config('services.mqtt.host');
+        $port = config('services.mqtt.port');
+        $username = config('services.mqtt.username');
+        $password = config('services.mqtt.password');
+        $client_id = config('services.mqtt.client_id');
+        $mqtt = new phpMQTT($server, $port, $client_id);
+        // MQTT Topic
+        $mqtt_topic = "remote/" . $device_tunnel->device->muid;
+        $mqtt_mesagge = json_encode(array(
+            'tunnel' => 'close'
+        ));
+        // Try to send the message up to 5 times...
+        $tryagain = 1;
+        do {
+            if ($mqtt->connect(true, NULL, $username, $password)) {
+                $mqtt->publish($mqtt_topic, $mqtt_mesagge, 0);
+                $mqtt->close();
+                $tryagain = 10;
+            } else {
+                sleep(1);
+                $tryagain++;
+            }
+        } while ($tryagain <= 5);
+
+        /**
+         * Updating the domoproxy file
+         */
+
+        $newset = '';
+        if (!Storage::exists('domoproxy')) {
+            Storage::put('domoproxy',
+                "# -------------------------------------------------- \n" .
+                "# This file is automatically generated by Remachinon \n" .
+                "# Do not edit unless you know what you're doing      \n" .
+                "# -------------------------------------------------- \n");
+        }
+        // @todo I hate doing this way... probably will go back to ol' fopen file handling (@LeSENSE)...
+        $domoproxy = explode("\n", Storage::get('domoproxy'));
+        // Removing any duplicated UUID using the current port
+        foreach ($domoproxy as $line) {
+            if (!empty($line) && !preg_match("/(?:{$device_tunnel->uuid})/", $line)) {
+                $newset .= $line . "\n";
+            }
+        }
+        // Add the current set to domoproxy file
+        Storage::put('domoproxy', $newset);
+
+        // Clean up the tunnel attributes (set to null)
+        DeviceTunnel::where('id', $id)
+                    ->update(DeviceTunnel::$defaults);
+
+        return response()->json([
+            'status' => 'success',
+            'response_body' => null,
+            'message' => null,
+        ]);
+    }
+
+    /**
+     * Checks the status of the tunnel. If connected sents back
+     * a javascript that makes the remote website load in a new window
+     *
+     * @param \Illuminate\Http\Request
+     * @param string $uuid
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function status($uuid)
+    {
+        try {
+            $device_tunnel = DeviceTunnel::where('uuid', $uuid)
+                ->where('is_enabled', '1')
+                ->where('updated_at', '>=', now()->subHours(2))
+                ->firstOrFail();
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Tunnel not ready',
+            ],404);
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        // If we find a tunnel that matches, we check if is still
+        // opened and just return to the listing scren
+        // to show the right "go" icon link.
+        $tryagain = 1;
+        do {
+            if (@fsockopen("127.0.0.1", $device_tunnel->port, $errno, $errstr, 10)) {
+                $device_tunnel->is_enabled = true;
+                $device_tunnel->save();
+                // This forces the RestTrait::isApiAction() method handle exception as API responses (too shabby?)
+                // Send response with temporary API token (for autologin/confirm from the remote device)
+                $tokenResult = auth()->user()->createToken('Remote Tunnel Token', ['connect-tunnel']);
+                $token = $tokenResult->token;
+                $token->expires_at = now()->addMinutes(5);
+                $token->save();
+                return response()->json([
+                    'status' => 'success',
+                    'response_body' => [
+                        'access_token' => $tokenResult->accessToken,
+                        'token_type'    => 'Bearer',
+                        'expires_at'    => Carbon::parse(
+                            $tokenResult->token->expires_at)
+                            ->toDateTimeString(),
+                    ],
+                    'message' => 'Tunnel ready',
+                ]);
+            } else {
+                sleep (1);
+                $tryagain++;
+            }
+        } while ($tryagain <= 15);
+        // If tunnel is enabled AND unable to connect, something bad happened...
+        // Closing tunnel and sending custom message
+        return $this->disconnect($device_tunnel->id)
+                    ->setStatusCode(408)
+                    ->setJson(\GuzzleHttp\json_encode([
+                        'status' => 'failure',
+                        'response_body' => null,
+                        'message' => 'Device unreachable, tunnel closed'
+                    ]));
+    }
+
+    /**
+     * This is an authorization method for Machinon remote sites based on receiving the API access token that LeSENSE sends to
+     * the Machinon site when requesting the link establishment and the special token with port (the transparent tunnel login)
+     *
+     * @param string $uuid
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function confirm($uuid)
+    {
+        try {
+            $device_tunnel = DeviceTunnel::where('uuid', $uuid)
+                ->firstOrFail();
+            $this->authorize('connect', $device_tunnel);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'failure',
+                'response_body' => null,
+                'message' => 'Device not found',
+            ], 404);
+        }
+        // Device has called home successfully so everything's ready to go, set tunnel enabled to true
+        $device_tunnel->is_enabled = true;
+        $device_tunnel->save();
+        return response()->json([
+            'status' => 'success',
+            'response_body' => null,
+            'message' => 'null',
+        ]);
+    }
+
+    /**
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cron()
+    {
+        // @todo DeviceTunnels@cron must go on Console instead of Http, run it through command line
+        // @todo Before updating old records we should also update the domoproxy file
+        DeviceTunnel::where('updated_at', '<', Carbon::now()->subHours(2))
+                    ->update(DeviceTunnel::$defaults);
+        return response()->json([
+            'response_body' => 'OK.'
+        ]);
     }
 }

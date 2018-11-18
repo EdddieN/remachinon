@@ -19,7 +19,7 @@ class Device extends Model
      * @var array
      */
     protected $fillable = [
-        'name', 'muid', 'description', 'is_enabled',
+        'name', 'muid', 'description'
     ];
 
     /**
