@@ -40,6 +40,24 @@ return [
     */
 
     'debug' => env('APP_DEBUG', false),
+    // Hiding Environment Variables From Debug Pages
+    'debug_blacklist' => [
+        '_ENV' => [
+            'APP_KEY',
+            'DB_PASSWORD',
+            'MAIL_PASSWORD',
+            'MQTT_PASSWORD',
+        ],
+        '_SERVER' => [
+            'APP_KEY',
+            'DB_PASSWORD',
+            'MAIL_PASSWORD',
+            'MQTT_PASSWORD',
+        ],
+        '_POST' => [
+            'password',
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -183,6 +201,7 @@ return [
         Remachinon\Providers\AuthServiceProvider::class,
         // Remachinon\Providers\BroadcastServiceProvider::class,
         Remachinon\Providers\EventServiceProvider::class,
+        Remachinon\Providers\TelescopeServiceProvider::class,
         Remachinon\Providers\RouteServiceProvider::class,
 
     ],

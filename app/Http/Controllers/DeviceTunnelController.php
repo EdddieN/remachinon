@@ -2,6 +2,7 @@
 
 namespace Remachinon\Http\Controllers;
 
+use Illuminate\Filesystem\Filesystem;
 use Remachinon\Models\DeviceTunnel;
 use Bluerhinos\phpMQTT;
 use Carbon\Carbon;
