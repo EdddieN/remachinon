@@ -1,7 +1,7 @@
 /node_modules
 /public/fonts/vendor
-/public/css/*
-/public/js/*
+/public/css
+/public/js
 /public/vendor
 /public/hot
 /public/storage
