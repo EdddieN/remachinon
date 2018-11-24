@@ -1,65 +1,90 @@
-<p align="center"><img src="https://laravel.com/assets/img/components/logo-laravel.svg"></p>
+# Re:Machinon
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+```  
+WARNING !! Do NOT make this repository public yet !!*  
+```  
 
-## About Laravel
+## Work in progress
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel attempts to take the pain out of development by easing common tasks used in the majority of web projects, such as:
+ReMachinon is a web app created with Laravel framework that allows to register and connect to your Machinon devices remotely from anywhere in the world without any NAT, VPN or complicated router configurations.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+*Note: This software requires some knowledge of Apache and MySQL basic configuration*
 
-Laravel is accessible, yet powerful, providing tools needed for large, robust applications.
+# Server requirements
 
-## Learning Laravel
++ Apache 2.2+
++ PHP 7.2
++ MySQL 5.7
++ SSHd
++ Node.js (url)
++ Composer (url)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of any modern web application framework, making it a breeze to get started learning the framework.
+This software requires the use of Machinon devices with the following packets installed:
 
-If you're not in the mood to read, [Laracasts](https://laracasts.com) contains over 1100 video tutorials on a range of topics including Laravel, modern PHP, unit testing, JavaScript, and more. Boost the skill level of yourself and your entire team by digging into our comprehensive video library.
++ ReMachinon Web (GitHub URL here)
++ ReMachinon Agent (GitHub URL here)
 
-## Laravel Sponsors
+You can get requirements, installation and setup details in each package's Github page.
 
-We would like to extend our thanks to the following sponsors for helping fund on-going Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell):
+# ToDo
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[British Software Development](https://www.britishsoftware.co)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- [UserInsights](https://userinsights.com)
-- [Fragrantica](https://www.fragrantica.com)
-- [SOFTonSOFA](https://softonsofa.com/)
-- [User10](https://user10.com)
-- [Soumettre.fr](https://soumettre.fr/)
-- [CodeBrisk](https://codebrisk.com)
-- [1Forge](https://1forge.com)
-- [TECPRESSO](https://tecpresso.co.jp/)
-- [Runtime Converter](http://runtimeconverter.com/)
-- [WebL'Agence](https://weblagence.com/)
-- [Invoice Ninja](https://www.invoiceninja.com)
-- [iMi digital](https://www.imi-digital.de/)
-- [Earthlink](https://www.earthlink.ro/)
-- [Steadfast Collective](https://steadfastcollective.com/)
+[ ] Visual styles
+[ ] User groups
+[ ] Global permissions
+[x] User web authentication
+[x] User API authentication
+[x] Device registration
+[x] Device tunnel connection procedures
 
-## Contributing
+# Server setup
+ 
+#### Apache
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+You need to setup a VirtualHost on the apache server that contains special dynamic reverse proxy tunneling directives.
+Use the Hostname, DocumentRoot that fit your needs
+The proxy file path directive must fit the installation DocumentRoot chosen.
 
-## Security Vulnerabilities
+```
+TODO
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+#### MySQL
+Create a MySQL database and set an user and password for the app.
 
-## License
+#### SSHd
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+You must setup a user account on the server to create the tunnels
+
+```
+TODO
+``` 
+
+
+# Installing
+
+Go to your Apache /var/www/htdocs or wherever you want to use as the VirtualHost DocumentRoot folder
+Ensure the folder is **empty**
+
+```
+git clone *url*
+cd remachinon
+composer update
+npm run production
+php artisan migrate
+>> php artisan *:cache etc commands here
+```
+
+# Updating
+
+```
+Code
+```
+
+# Usage
+
+- Go to the URL of your webserver
+- Login or register a user
+- Add a new device using your chosen name, the device's MUID (where is the MUID?) and a description.
+- Click on the Connect button and follow instructions.
+
+> Written with [StackEdit](https://stackedit.io/).

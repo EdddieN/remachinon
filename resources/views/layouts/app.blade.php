@@ -11,6 +11,10 @@
     <link href="https://fonts.googleapis.com/css?family=Nunito" rel="stylesheet" type="text/css">
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="images/iphone-icon.png">
+    <link rel="icon" sizes="192x192" href="images/logo192.png">
 </head>
 <body style="background: url('{{ asset('images/background.jpg') }}')">
     <div id="app">
