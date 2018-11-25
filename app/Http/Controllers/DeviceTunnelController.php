@@ -84,6 +84,7 @@ class DeviceTunnelController extends Controller
         $tunnel_ports = array(10001, 30000);
         $port_found = false;
         $tryout_counter = 0;
+        $used_ports = [];
         // Command to read used ports is different in each OS
         // @todo \PROCESS should work but returns cwd errors. Using exec(). I'll fix it later
         switch(config('app.os')) {
@@ -152,8 +153,10 @@ class DeviceTunnelController extends Controller
 
         // Before saving, reset other tunnels using the same port/uuid
         DeviceTunnel::where('device_id', '<>', $device_tunnel->device_id)
-                    ->where('port', $device_tunnel->port)
-                    ->orWhere('uuid', $device_tunnel->uuid)
+                    ->where(function ($query) use ($device_tunnel) {
+                        return $query->where('port', '=', $device_tunnel->port)
+                                     ->orWhere('uuid', '=', $device_tunnel->uuid);
+                    })
                     ->update(DeviceTunnel::$defaults);
 
         // All clear! Update tunnel record
@@ -191,14 +194,18 @@ class DeviceTunnelController extends Controller
         $port = config('services.mqtt.port');
         $username = config('services.mqtt.username');
         $password = config('services.mqtt.password');
-        $client_id = config('services.mqtt.client_id');
-        $mqtt = new phpMQTT($server, $port, $client_id);
+        $client_id = config('services.mqtt.client_id').$device_tunnel->device->muid;
+        $cafile = null;
+        if ($port != '1083' && Storage::exists('mqtt_cert.pem')) {
+            $cafile = Storage::path('mqtt_cert.pem');
+        }
+        $mqtt = new phpMQTT($server, $port, $client_id, $cafile);
         // MQTT Topic
         $mqtt_topic = "remote/" . $device_tunnel->device->muid;
         $mqtt_mesagge = json_encode([
             'tunnel' => 'open',
             'port' => (string)$device_tunnel->port,
-            'device_id' => $device_tunnel->id
+            'uuid' => $device_tunnel->uuid
         ]);
         // Try to send the message up to 5 times...
         $tryagain = 1;
@@ -257,8 +264,12 @@ class DeviceTunnelController extends Controller
         $port = config('services.mqtt.port');
         $username = config('services.mqtt.username');
         $password = config('services.mqtt.password');
-        $client_id = config('services.mqtt.client_id');
-        $mqtt = new phpMQTT($server, $port, $client_id);
+        $client_id = config('services.mqtt.client_id').$device_tunnel->device->muid;
+        $cafile = null;
+        if ($port != '1083' && Storage::exists('mqtt_cert.pem')) {
+            $cafile = Storage::path('mqtt_cert.pem');
+        }
+        $mqtt = new phpMQTT($server, $port, $client_id, $cafile);
         // MQTT Topic
         $mqtt_topic = "remote/" . $device_tunnel->device->muid;
         $mqtt_mesagge = json_encode(array(
@@ -316,13 +327,13 @@ class DeviceTunnelController extends Controller
      * a javascript that makes the remote website load in a new window
      *
      * @param \Illuminate\Http\Request
-     * @param string $uuid
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function status($uuid)
+    public function status($id)
     {
         try {
-            $device_tunnel = DeviceTunnel::where('uuid', $uuid)
+            $device_tunnel = DeviceTunnel::where('id', $id)
                 ->where('is_enabled', '1')
                 ->where('updated_at', '>=', now()->subHours(2))
                 ->firstOrFail();
@@ -357,6 +368,7 @@ class DeviceTunnelController extends Controller
                 return response()->json([
                     'status' => 'success',
                     'response_body' => [
+                        'tunnel_uuid' => $device_tunnel->uuid,
                         'access_token' => $tokenResult->accessToken,
                         'token_type'    => 'Bearer',
                         'expires_at'    => Carbon::parse(
@@ -369,7 +381,7 @@ class DeviceTunnelController extends Controller
                 sleep (1);
                 $tryagain++;
             }
-        } while ($tryagain <= 15);
+        } while ($tryagain <= 5);
         // If tunnel is enabled AND unable to connect, something bad happened...
         // Closing tunnel and sending custom message
         return $this->disconnect($device_tunnel->id)

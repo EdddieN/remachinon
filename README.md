@@ -29,10 +29,14 @@ You can get requirements, installation and setup details in each package's Githu
 - [ ] Visual styles  
 - [ ] User groups  
 - [ ] Global permissions  
+- [ ] TLS on MQTT connections
+
+# Done
+
 - [X] User web authentication  
 - [X] User API authentication  
 - [X] Device registration  
-- [X] Device tunnel connection procedures  
+- [X] Device tunnel connection and disconnection  
   
 # Server setup  
    

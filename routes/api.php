@@ -26,8 +26,10 @@ Route::group(['prefix' => 'auth'], function () {
     });
 });
 
-Route::get('tunnels/{uuid}/status', ['as' => 'api.tunnels.status', 'uses' => 'DeviceTunnelController@status'])
-     ->middleware(['auth:api', 'scopes:connect-tunnel']);
+//Route::get('tunnels/{uuid}/status', ['as' => 'api.tunnels.status', 'uses' => 'DeviceTunnelController@status'])
+//     ->middleware(['auth:api', 'scopes:connect-tunnel']);
+
 Route::post('tunnels/{uuid}/confirm', 'DeviceTunnelController@confirm')
      ->middleware(['auth:api', 'scopes:connect-tunnel']);
+
 Route::get('tunnels/cron', 'DeviceTunnelController@cron');

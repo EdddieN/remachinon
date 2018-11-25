@@ -20,13 +20,15 @@
            {{--class="btn btn-success float-right border border-dark" target="_blank">--}}
             {{--<i class="far fa-handshake"></i></a>--}}
         <button type="button"
-                data-url="{{ route('devices.connect', ['id' => $device->device_tunnel->id]) }}"
-                data-poll="{{ route('api.tunnels.status', ['id' => $device->device_tunnel->id]) }}"
-                data-id="{{ $device->device_tunnel->id }}"
+                data-connect-url="{{ route('devices.connect', ['id' => $device->device_tunnel->id]) }}"
+                data-disconnect-url="{{ route('devices.disconnect', ['id' => $device->device_tunnel->id]) }}"
+                data-status-url="{{ route('tunnels.status', ['id' => $device->device_tunnel->id]) }}"
                 data-title="Connecting to {{ $device->name }}"
                 data-toggle="modal"
                 data-target="#connectModal"
-                class="btn btn-danger float-right border border-dark">
+                data-backdrop="static"
+                data-keyboard="false"
+                class="btn btn-success float-right border border-dark">
             <i class="far fa-handshake"></i></button>
     </div>
 </div>

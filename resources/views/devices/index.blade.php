@@ -31,14 +31,54 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-primary">
-                    <h4 class="modal-title text-white" id="modalTitle"></h4>
+                    <h4 class="modal-title text-white"></h4>
                     <button type="button" class="close text-white" data-dismiss="modal">×</button>
                 </div>
-                <div class="modal-body text-center">
-                    <h1><i class="fas fa-cog fa-spin"></i></h1>
-                    <form id="machAction" action=""  method="post" target="_blank">
-                        <input id="machlToken" type="hidden" name="access_token" value="" />
-                    </form>
+                <div class="modal-body text-center"></div>
+                <form id="machAction" action="" method="post" target="_blank">
+                    <input id="machToken" type="hidden" name="access_token" value="" />
+                </form>
+                <div id="connectWait" style="display:none">
+                    <p><div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                             aria-valuemax="100" style="width: 0%"></div>
+                    </div></p>
+                </div>
+                <div id="connectOk" style="display:none">
+                    <h1><i class="fas fa-check-circle" style="color:green"></i></h1>
+                    <p>{{ __('Link has been established.') }}<br/>
+                        {{ __('Click "Back" to continue working or') }}<br/>
+                        {{ __('"Disconnect" button to close link.') }}</p>
+                    <p><button class="btn btn-secondary border border-dark float-left"
+                               type="button" data-dismiss="modal">
+                            <i class="fas fa-arrow-left"></i> {{ __('Back') }}</button>
+                        <button class="btn btn-danger border border-dark float-right disconnect"
+                                type="button">
+                            <i class="fas fa-hand-paper"></i> {{ __('Disconnect') }}</button></p>
+                </div>
+                <div id="connectError" style="display:none">
+                    <h1><i class="fas fa-times-circle" style="color:red"></i></h1>
+                    <p>{{ __('Couldn\'t establish the link.') }}<br/>
+                        {{ __('Please try again in a minute.') }}</p>
+                    <p><button class="btn btn-secondary border border-dark"
+                               type="button" data-dismiss="modal">
+                            <i class="fas fa-arrow-left"></i> {{ __('Back') }}</button></p>
+                </div>
+                <div id="disconnectOk" style="display:none">
+                    <h1><i class="fas fa-check-circle" style="color:green"></i></h1>
+                    <p>{{ __('Link has been closed successfully.') }}</p>
+                    <p><button class="btn btn-secondary border border-dark float-right"
+                               type="button" data-dismiss="modal">
+                            <i class="fas fa-check"></i> {{ __('Close') }}</button></p>
+                </div>
+                <div id="disconnectError" style="display:none">
+                    <h1><i class="fas fa-times-circle" style="color:red"></i></h1>
+                    <p>{{ __('Couldn\'t close the link.') }}<br/>
+                        {{ __('Please try again in a minute.') }}</p>
+                    <p><button class="btn btn-secondary border border-dark"
+                               type="button" data-dismiss="modal">
+                            <i class="fas fa-arrow-left"></i> {{ __('Back') }}</button></p>
                 </div>
             </div>
         </div>
@@ -47,97 +87,91 @@
 
 @section('javascript')
     <script type="text/javascript">
+        let target;
+        let progbar = 0;
         $(document).ready(function() {
             $('#connectModal').on('show.bs.modal', function (e) {
-                let target = $(e.relatedTarget);
-                $("#connectModal").find("#modalTitle").text(target.data('title'));
-//                poll_tunnel(target);
-                tunstat(target);
+                target = $(e.relatedTarget);
+                progbar = 0;
+                $('.modal-title').text(target.data('title'));
+                $('.modal-body').html($('#connectWait').html());
+                $('.progress-bar').css('width', '0%').attr('aria-valuenow', 0);
+                setTimeout(function () {
+                    progbar = progbar + 5;
+                    $('.progress-bar').css('width', progbar+'%').attr('aria-valuenow', progbar);
+                },1000);
+                connect_tunnel(target);
             });
         });
+        $('#connectModal').on('click', 'button.disconnect', function () {
+            disconnect_tunnel(target);
+        });
 
-        {{-- Trying new ES6 function declarations here... ^_^ --}}
-
-        let poll_tunnel = (target) =>
+        let connect_tunnel = (target) =>
         {
             $.ajax({
-                url: target.data('url'),
+                url: target.data('connect-url'),
                 method: "GET",
                 dataType: "json",
                 success: function (result) {
-                    let url = '{{ config('app.remote_url') }}/' + result.response_body.uuid + '/';
-                    $("#machToken").attr('value', '');
-                    $("#machAction").attr('action', url).submit();
+                    status_tunnel(target, 1);
                 },
                 error: function (req, status, error) {
-                    console.log('calling poll tunnel at '+target.data('poll'));
-//                    poll_tunnel_status(target.data('poll'),0);
+                    $('.modal-body').html($('#connectError').html());
                 }
             });
         };
 
-        let tunstat = (target) =>
+        let status_tunnel = (target, retries) =>
         {
             $.ajax({
-                url: target.data('poll')+'?scope=janderclander',
-                method: "GET",
-                dataType: "json",
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X_CSRF_TOKEN': $('meta[name=csrf-token]').attr("content")
-                },
-                success: function (result) {
-                    console.log(result)
-                },
-                error: function (req, status, error) {
-                    console.log(req);
-                }
-            });
-        };
-
-        let poll_tunnel_status = (check_url, tn) =>
-        {
-            pollingTm = null;
-            if (tn === 0) {
-                console.log('Tunnel polling started...');
-            }
-            $.ajax({
-                url: check_url,
+                url: target.data('status-url'),
                 method: "GET",
                 dataType: "json",
                 success: function (result) {
-                    //  loginWindow.location.href = tunnel_url;
-                    poll_tunnel_stop(pollingTm);
-                    console.log('received ' + result + '. redirecting to ' + tunnel_url);
-                    $("#machinongo").submit();
-                    $("#okmsg").hide();
-                    $("#clmsg").show();
+                    $('.progress-bar').css('width', '100%').attr('aria-valuenow', 100);
+                    setTimeout(function () {
+                        $('.modal-body').html($('#connectOk').html());
+                        run_tunnel(result);
+                    }, 2000);
                 },
                 error: function (req, status, error) {
-                    console.log('received ' + status + '. waiting for next try...');
-                    if (tn > 12) {
-                        poll_tunnel_stop(pollingTm);
-                        $("#okmsg").hide();
-                        $("#ermsg").show();
+                    if (retries > 6) {
+                        $('.modal-body').html($('#connectError').html());
                     } else {
-                        tn = tn + 1;
-                        pollingTm = setTimeout(function() {
-                            poll_tunnel_status(check_url, tunnel_url, tn);
+                        retries++;
+                        progbar = progbar + retries * 3;
+                        $('.progress-bar').css('width', progbar + '%').attr('aria-valuenow', progbar);
+                        setTimeout(function () {
+                            status_tunnel(target, retries);
                         }, 5000);
                     }
                 }
             });
         };
 
-        let poll_tunnel_stop = pollingTm =>
+        let run_tunnel = (result) =>
         {
-            if (pollingTm !== null) clearTimeout(pollingTm);
+            $('#machToken').attr('value', result.response_body.access_token);
+            $('#machAction').attr({
+                action: '{{ config('app.remote_url') }}/' + result.response_body.tunnel_uuid + '/',
+                method: 'POST'
+            }).submit();
         };
 
-        let tunnel_close = () =>
+        let disconnect_tunnel = (target) =>
         {
-            $("#clbtn").attr('value','Please wait...').attr('disabled', true);
-            $("#machinonclose").submit();
+            $.ajax({
+                url: target.data('disconnect-url'),
+                method: "GET",
+                dataType: "json",
+                success: function (result) {
+                    $('.modal-body').html($('#disconnectOk').html());
+                },
+                error: function (req, status, error) {
+                    $('.modal-body').html($('#disconnectError').html());
+                }
+            });
         };
 
     </script>
