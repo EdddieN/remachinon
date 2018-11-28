@@ -50,7 +50,7 @@ class DeviceController extends Controller
         ]);
         $device = auth()->user()->devices()->create($attributes);
         // Creates the new Device's DeviceTunnel model automatically
-        $device->tunnel()->create();
+        $device->device_tunnel()->create();
         return redirect()->route('devices.index')
             ->with('success', __('Device created successfully!'));
     }

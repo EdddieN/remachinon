@@ -87,18 +87,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Application's Remote Tunnel (Proxy Server) URL
-    |--------------------------------------------------------------------------
-    |
-    | This defines the URL of the webserver responsible of proxying
-    | the remote webserver requests through a public URL/device UUID.
-    | (Read the documentation to know how to setup this server/virtualhost)
-    |
-    */
-    'remote_url' => env('REMOTE_TUNNEL_URL', 'http://localhost'),
-
-    /*
-    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

@@ -154,7 +154,7 @@
         {
             $('#machToken').attr('value', result.response_body.access_token);
             $('#machAction').attr({
-                action: '{{ config('app.remote_url') }}/' + result.response_body.tunnel_uuid + '/auth.php',
+                action: '/remote/' + result.response_body.tunnel_uuid + '/auth.php',
                 method: 'POST'
             }).submit();
         };
