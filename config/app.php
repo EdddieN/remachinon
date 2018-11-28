@@ -256,4 +256,10 @@ return [
         'MQTT' => Bluerhinos\phpMQTT::class,
     ],
 
+    /*
+    | User registration is limited to the following IP addresses
+    | through a Middleware, all IPs are allowed by default
+    */
+    'allow_registry_from' => env('ALLOW_REGISTRY_FROM', '*'),
+
 ];

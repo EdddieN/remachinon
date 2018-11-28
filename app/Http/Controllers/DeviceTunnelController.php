@@ -48,6 +48,7 @@ class DeviceTunnelController extends Controller
 
         // It may happen that somebody opens the tunnel while you already have the listing page loaded with the
         // "open tunnel" icon. So if you click "open tunnel" the tunnel may have been already opened....
+        // We return the UUID and the web will call the ajax status() action as usual, which will then redirect to the page
         if ($device_tunnel->is_enabled && Carbon::parse($device_tunnel->updated_at)
                                                     ->addHours(2)
                                                     ->greaterThan(now())) {
@@ -69,12 +70,17 @@ class DeviceTunnelController extends Controller
                     $retry++;
                 }
             } while ($retry <= 5); // Try connecting up to 5 times
-            // Tunnel is setup but remote device didn't confirmed tunnel yet, send timeout and let ajax try again
-            return response()->json([
-                'status' => 'failure',
-                'response_body' => null,
-                'message' => 'Operation timeout'
-            ], 408);
+            // Tunnel is opened and confirmed, but cannot connect
+            // Something went wrong. Disconnect and try again
+            // If tunnel is enabled AND unable to connect, something bad happened...
+            // Closing tunnel and sending custom message
+            return $this->disconnect($device_tunnel->id)
+                        ->setStatusCode(408)
+                        ->setJson(\GuzzleHttp\json_encode([
+                            'status' => 'failure',
+                            'response_body' => null,
+                            'message' => 'Device unreachable, tunnel closed'
+                        ]));
         }
 
         /**
@@ -187,6 +193,15 @@ class DeviceTunnelController extends Controller
         Storage::put('domoproxy', $newset);
 
         /**
+         * Generating a new temporary API hash to let the machinon-agent call the confirmation endpoint
+         */
+
+        $tokenResult = auth()->user()->createToken('Remote Tunnel Token', ['connect-tunnel']);
+        $token = $tokenResult->token;
+        $token->expires_at = now()->addMinutes(5);
+        $token->save();
+
+        /**
          * Sending the MQTT message to the Machinon Agent
          */
 
@@ -205,7 +220,12 @@ class DeviceTunnelController extends Controller
         $mqtt_mesagge = json_encode([
             'tunnel' => 'open',
             'port' => (string)$device_tunnel->port,
-            'uuid' => $device_tunnel->uuid
+            'uuid' => $device_tunnel->uuid,
+            'access_token' => $tokenResult->accessToken,
+            'token_type'    => 'Bearer',
+            'expires_at'    => Carbon::parse(
+                $tokenResult->token->expires_at)
+                ->toDateTimeString(),
         ]);
         // Try to send the message up to 5 times...
         $tryagain = 1;
@@ -357,8 +377,6 @@ class DeviceTunnelController extends Controller
         $tryagain = 1;
         do {
             if (@fsockopen("127.0.0.1", $device_tunnel->port, $errno, $errstr, 10)) {
-                $device_tunnel->is_enabled = true;
-                $device_tunnel->save();
                 // This forces the RestTrait::isApiAction() method handle exception as API responses (too shabby?)
                 // Send response with temporary API token (for autologin/confirm from the remote device)
                 $tokenResult = auth()->user()->createToken('Remote Tunnel Token', ['connect-tunnel']);

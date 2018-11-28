@@ -19,17 +19,20 @@ use Illuminate\Http\Request;
 
 Route::group(['prefix' => 'auth'], function () {
     Route::post('login', 'AuthController@login');
-    Route::post('signup', 'AuthController@signup');
-
+    Route::group(['middleware' => 'ipcheck'], function() {
+        Route::post('signup', 'AuthController@signup');
+    });
     Route::group(['middleware' => 'auth:api'], function() {
         Route::get('logout', 'AuthController@logout');
     });
 });
 
-//Route::get('tunnels/{uuid}/status', ['as' => 'api.tunnels.status', 'uses' => 'DeviceTunnelController@status'])
-//     ->middleware(['auth:api', 'scopes:connect-tunnel']);
+Route::get('tunnels/{uuid}/status', ['as' => 'api.tunnels.status', 'uses' => 'DeviceTunnelController@status'])
+     ->middleware(['auth:api', 'scopes:connect-tunnel']);
 
-Route::post('tunnels/{uuid}/confirm', 'DeviceTunnelController@confirm')
+Route::put('tunnels/{uuid}/confirm', 'DeviceTunnelController@confirm')
      ->middleware(['auth:api', 'scopes:connect-tunnel']);
 
 Route::get('tunnels/cron', 'DeviceTunnelController@cron');
+
+// You must use ['scopes:'] (empty value) to allow only tokens with an empty scope.

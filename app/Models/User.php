@@ -37,4 +37,16 @@ class User extends Authenticatable
     public function devices() {
         return $this->hasMany('Remachinon\Models\Device');
     }
+
+    /**
+     * I think Laravel already has some methods to get User tokens
+     * But I've created this as a way to manage them with Eloquent
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function accessTokens() // why not access_tokens?
+    {
+        return $this->hasMany('Remachinon\Models\OauthAccessToken');
+    }
+
 }

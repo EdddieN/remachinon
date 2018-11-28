@@ -8,7 +8,7 @@
             <div class="row">
                 @foreach($devices->all() as $device)
                     <div class="col-lg-4 col-sm-6 col-xs-12 justify-content-center px-1 pb-2">
-                        @include('devices.device-card')
+                        @include('devices.card')
                     </div>
                     @if($loop->iteration % 3 == 0)
                         {{--<div class="w-100"></div>--}}
@@ -136,7 +136,7 @@
                     }, 2000);
                 },
                 error: function (req, status, error) {
-                    if (retries > 6) {
+                    if (req.status === 408 || retries > 6) {
                         $('.modal-body').html($('#connectError').html());
                     } else {
                         retries++;
@@ -154,7 +154,7 @@
         {
             $('#machToken').attr('value', result.response_body.access_token);
             $('#machAction').attr({
-                action: '{{ config('app.remote_url') }}/' + result.response_body.tunnel_uuid + '/',
+                action: '{{ config('app.remote_url') }}/' + result.response_body.tunnel_uuid + '/auth.php',
                 method: 'POST'
             }).submit();
         };

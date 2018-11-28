@@ -30,10 +30,11 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         Passport::routes();
-
         Passport::tokensCan([
             'connect-tunnel' => 'Connect to tunnels'
         ]);
+        Passport::$revokeOtherTokens;
+        Passport::$pruneRevokedTokens;
 
         // Ejemplo de before filter para comprobar isAdmins y cosas así
         // Si esto devuelve true no se comprueba la policy siquiera...
