@@ -23,11 +23,19 @@
                         <div class="col text-right">
                             <div class="form-group">
                                 <label for="online">{{ __('Device status') }}</label>
-                                <p><button type="button" class="btn btn-success">{{ $device->is_enabled?'Online':'Offline' }}</button></p>
+                                @if ($device->is_enabled)
+                                    <p><button type="button" class="btn btn-success">{{ __('Online') }}</button></p>
+                                @else
+                                    <p><button type="button" class="btn btn-danger">{{ __('Offline') }}</button></p>
+                                @endif
                             </div>
                             <div class="form-group">
-                                <label for="status">{{ __('Remote tunnel status') }}</label>
-                                <p><button type="button" class="btn btn-danger">{{ $device->tunnel_enabled?'Connected':'Disconnected' }}</button></p>
+                                <label for="status">{{ __('Remote link status') }}</label>
+                                @if ($device->device_tunnel->is_enabled)
+                                    <p><button type="button" class="btn btn-success">{{ __('Connected') }}</button></p>
+                                @else
+                                    <p><button type="button" class="btn btn-danger">{{ __('Disonnected') }}</button></p>
+                                @endif
                             </div>
                         </div>
                     </div>
