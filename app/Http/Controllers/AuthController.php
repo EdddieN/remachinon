@@ -104,15 +104,4 @@ class AuthController extends Controller
             'message'       => 'Successfully logged out'
         ]);
     }
-
-    /**
-     * TEST, TO REMOVE
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-//    public function user(Request $request)
-//    {
-//        return response()->json($request->user());
-//    }
 }

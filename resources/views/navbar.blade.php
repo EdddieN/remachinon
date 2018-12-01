@@ -34,6 +34,9 @@
                         <a class="dropdown-item" href="{{ route('devices.index') }}">
                             {{ __('My devices') }}
                         </a>
+                        <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                            {{ __('Edit profile') }}
+                        </a>
                         <a class="dropdown-item" href="{{ route('logout') }}"
                            onclick="event.preventDefault();
                                          document.getElementById('logout-form').submit();">

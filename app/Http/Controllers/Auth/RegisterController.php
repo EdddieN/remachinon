@@ -28,7 +28,7 @@ class RegisterController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/devices';
+    protected $redirectTo = '/';
 
     /**
      * Create a new controller instance.
@@ -37,7 +37,7 @@ class RegisterController extends Controller
      */
     public function __construct()
     {
-        $this->middleware(['guest','ipcheck']);
+        $this->middleware(['guest','ipcheck'])->except(['edit','update']);
     }
 
     /**
@@ -68,5 +68,21 @@ class RegisterController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
+    }
+
+    /**
+     */
+    public function edit()
+    {
+        $user = auth()->user();
+        return view('auth.edit', compact('user'));
+    }
+
+    /**
+     * @param Request $request
+     */
+    public function update(Request $request)
+    {
+
     }
 }

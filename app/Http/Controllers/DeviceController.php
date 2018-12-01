@@ -6,11 +6,6 @@ use Remachinon\Models\Device;
 
 class DeviceController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     /**
      * Display a listing of the resource.
      *

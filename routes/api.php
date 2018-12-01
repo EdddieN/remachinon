@@ -13,26 +13,18 @@ use Illuminate\Http\Request;
 |
 */
 
-//Route::middleware('auth:api')->get('/user', function (Request $request) {
-//    return $request->user();
-//});
-
+// Prefix is related to the URL "prefix" used to trigger the route. eg /api/v1/auth/login
 Route::group(['prefix' => 'auth'], function () {
     Route::post('login', 'AuthController@login');
-    Route::group(['middleware' => 'ipcheck'], function() {
-        Route::post('signup', 'AuthController@signup');
-    });
-    Route::group(['middleware' => 'auth:api'], function() {
-        Route::get('logout', 'AuthController@logout');
-    });
+    Route::post('signup', 'AuthController@signup')->middleware('ipcheck');
+    Route::get('logout', 'AuthController@logout')->middleware('auth:api');
 });
 
-Route::get('tunnels/{uuid}/status', ['as' => 'api.tunnels.status', 'uses' => 'DeviceTunnelController@status'])
-     ->middleware(['auth:api', 'scopes:connect-tunnel']);
-
-Route::put('tunnels/{uuid}/confirm', 'DeviceTunnelController@confirm')
-     ->middleware(['auth:api', 'scopes:connect-tunnel']);
-
-Route::get('tunnels/cron', 'DeviceTunnelController@cron');
-
 // You must use ['scopes:'] (empty value) to allow only tokens with an empty scope.
+Route::group(['middleware' => ['auth:api', 'scopes:connect-tunnel']], function() {
+    Route::get('tunnels/{uuid}/status', 'DeviceTunnelController@status')->name('api.tunnels.status');
+    Route::put('tunnels/{uuid}/confirm', 'DeviceTunnelController@confirm');
+});
+
+// this should go in console.php
+Route::get('tunnels/cron', 'DeviceTunnelController@cron');
