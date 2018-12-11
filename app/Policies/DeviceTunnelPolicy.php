@@ -19,6 +19,7 @@ class DeviceTunnelPolicy
      */
     public function connect(User $user, DeviceTunnel $device_tunnel)
     {
-        return $user->id === $device_tunnel->device->user_id;
+        return $device_tunnel->device->is_enabled
+            && $user->id === $device_tunnel->device->user_id;
     }
 }

@@ -347,6 +347,7 @@ class DeviceTunnelController extends Controller
                 ->where('is_enabled', '1')
                 ->where('updated_at', '>=', now()->subHours(2))
                 ->firstOrFail();
+            $this->authorize('connect', $device_tunnel);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => 'failure',

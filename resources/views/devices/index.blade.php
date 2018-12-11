@@ -36,6 +36,7 @@
                 </div>
                 <div class="modal-body text-center"></div>
                 <form id="machAction" action="" method="post" target="_blank">
+                    <input id="machUUID" type="hidden" name="tunnel_uuid" value="" />
                     <input id="machToken" type="hidden" name="access_token" value="" />
                 </form>
                 <div id="connectWait" style="display:none">
@@ -153,9 +154,9 @@
         let run_tunnel = (result) =>
         {
             $('#machToken').attr('value', result.response_body.access_token);
+            $('#machUUID').attr('value', result.response_body.tunnel_uuid);
             $('#machAction').attr({
-                action: '/remote/' + result.response_body.tunnel_uuid + '/auth.php',
-                method: 'POST'
+                action: '{{ Request::getSchemeAndHttpHost() }}/remote/' + result.response_body.tunnel_uuid + '/auth.php'
             }).submit();
         };
 
