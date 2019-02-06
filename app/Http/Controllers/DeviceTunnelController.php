@@ -390,7 +390,7 @@ class DeviceTunnelController extends Controller
                 sleep (1);
                 $tryagain++;
             }
-        } while ($tryagain <= 5);
+        } while ($tryagain <= 25);
         // If tunnel is enabled AND unable to connect, something bad happened...
         // Closing tunnel and sending custom message
         return $this->disconnect($device_tunnel->id)
