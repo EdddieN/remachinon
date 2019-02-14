@@ -17,7 +17,7 @@
     <link rel="apple-touch-icon" href="images/iphone-icon.png">
     <link rel="icon" sizes="192x192" href="images/logo192.png">
 </head>
-<body style="background: url('{{ asset('images/background.jpg') }}')">
+<body style="">
     <div id="app">
         @include('navbar')
         <main role="main" class="py-4" class="container">

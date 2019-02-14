@@ -16,9 +16,11 @@ Route::get('/', 'HomeController@index');
 Auth::routes();
 
 Route::group(['middleware' => 'auth'], function() {
-    // Updating own User details
-    Route::get('profile/edit', 'Auth\RegisterController@edit')->name('profile.edit');
-    Route::patch('profile/update', 'Auth\RegisterController@update')->name('profile.update');
+
+    // Updating own user profile
+    Route::get('profile/edit', 'UserController@edit')->name('profile.edit');
+    Route::get('user/{user}/edit', 'UserController@edit')->name('user.edit');
+    Route::patch('user/{user}/update', 'UserController@update')->name('user.update');
 
     Route::resource('devices', 'DeviceController');
 

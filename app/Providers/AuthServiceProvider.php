@@ -18,6 +18,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         'Remachinon\Models\Device' => 'Remachinon\Policies\DevicePolicy',
         'Remachinon\Models\DeviceTunnel' => 'Remachinon\Policies\DeviceTunnelPolicy',
+        'Remachinon\Models\User' => 'Remachinon\Policies\UserPolicy',
     ];
 
     /**

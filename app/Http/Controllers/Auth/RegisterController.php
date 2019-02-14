@@ -69,20 +69,4 @@ class RegisterController extends Controller
             'password' => Hash::make($data['password']),
         ]);
     }
-
-    /**
-     */
-    public function edit()
-    {
-        $user = auth()->user();
-        return view('auth.edit', compact('user'));
-    }
-
-    /**
-     * @param Request $request
-     */
-    public function update(Request $request)
-    {
-
-    }
 }

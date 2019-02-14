@@ -34,6 +34,7 @@
             // If page is refreshed, this scans all devices already connected and actives link buttons
             $('input:checked.tunnelswitch').each(function() {
                 target = $(this);
+                target.prop('disabled', true);
                 $('#statusM'+target.data('id')).html('Sending request...');
                 goM = $('#goM'+target.data('id'));
                 goM.removeClass('btn-danger btn-success')
@@ -46,6 +47,7 @@
             // If a switch is changed, connect or disconnect tunnel
             $('input.tunnelswitch').change(function(e) {
                 target = $(e.currentTarget);
+                target.prop('disabled', true);
                 statusM = $('#statusM'+target.data('id'));
                 goM = $('#goM'+target.data('id'));
                 goM.removeClass('btn-danger btn-success')
@@ -81,6 +83,7 @@
                         .removeClass('fa-handshake fa-spinner fa-spin')
                         .addClass('fa-exclamation-triangle');
                     setTimeout(function() {
+                        target.prop('disabled', false);
                         target.bootstrapToggle('off');
                     },3000);
                 }
@@ -115,6 +118,7 @@
                             .removeClass('fa-handshake fa-spinner fa-spin')
                             .addClass('fa-exclamation-triangle');
                         setTimeout(function() {
+                            target.prop('disabled', false);
                             target.bootstrapToggle('off');
                         },3000);
                      } else {
@@ -129,6 +133,7 @@
 
         let run_tunnel = (target, result) =>
         {
+            target.prop('disabled', false);
             goM = $('#goM'+target.data('id'));
             $('#machToken'+target.data('id')).attr('value', result.response_body.access_token);
             $('#machUUID'+target.data('id')).attr('value', result.response_body.tunnel_uuid);
@@ -148,6 +153,7 @@
                 method: "GET",
                 dataType: "json",
                 success: function (result) {
+                    target.prop('disabled', false);
                     $('#statusM'+target.data('id')).html('Disconnected');
                     $('#goM'+target.data('id')).attr('disabled', true);
                     goM.removeClass('btn-success btn-warning')
@@ -162,6 +168,7 @@
                 },
                 error: function (req, status, error) {
                     if (retries > 3) {
+                        target.prop('disabled', false);
                         goM.removeClass('btn-success btn-warning')
                             .addClass('btn-danger')
                             .attr('disabled', true)

@@ -8,7 +8,7 @@
             <div class="card">
                 <div class="card-header">{{ __('Edit Profile') }}</div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('profile.update') }}">
+                    <form method="POST" action="{{ route('user.update', ['id' => $user->id]) }}">
                         @csrf
                         @method('PATCH')
                         <div class="form-group row">
@@ -46,14 +46,14 @@
                             </div>
                         </div>
                         <div class="form-group row">
-                            <label for="password-old" class="col-md-4 col-form-label text-md-right">{{ __('Current Password') }}</label>
+                            <label for="password-now" class="col-md-4 col-form-label text-md-right">{{ __('Current Password') }}</label>
                             <div class="col-md-6">
-                                <input id="password-old" type="password"
-                                       class="form-control{{ $errors->has('password-old') ? ' is-invalid' : '' }}"
-                                       name="password-old">
-                                @if ($errors->has('password-old'))
+                                <input id="password-now" type="password"
+                                       class="form-control{{ $errors->has('password_now') ? ' is-invalid' : '' }}"
+                                       name="password_now">
+                                @if ($errors->has('password_now'))
                                     <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $errors->first('password-old') }}</strong>
+                                        <strong>{{ $errors->first('password_now') }}</strong>
                                     </span>
                                 @endif
                             </div>
@@ -74,7 +74,8 @@
                         <div class="form-group row">
                             <label for="password-confirm" class="col-md-4 col-form-label text-md-right">{{ __('Confirm New Password') }}</label>
                             <div class="col-md-6">
-                                <input id="password-confirm" type="password" class="form-control" name="password_confirmation">
+                                <input id="password-confirm" type="password" class="form-control"
+                                       name="password_confirmation">
                             </div>
                         </div>
                         <div class="form-group row mb-0">
