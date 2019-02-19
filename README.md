@@ -63,24 +63,103 @@ TODO
   
 # Installing  
   
-Go to your Apache /var/www/htdocs or wherever you want to use as the VirtualHost DocumentRoot folder  
+Go to your Apache /var/www/sites or wherever you want to use as the VirtualHost DocumentRoot folder  
 Ensure the folder is **empty**  
   
-```  
-git clone *url*  
-cd remachinon  
-composer update  
-npm run production  
-php artisan migrate  
->> php artisan *:cache etc commands here  
-```  
+```
+cd /var/www
+sudo mkdir -p sites/re.machinon.com
+cd sites/re.machinon.com
+sudo mkdir logs
+sudo git clone https://github.com/EdddieN/remachinon.git
+sudo mv remachinon htdocs
+sudo touch htdocs/storage/app/domoproxy
+sudo chown -R www-data:www-data htdocs logs
+sudo chmod ug+w -R htdocs
+cd htdocs
+```
+
+### Setting environment
+
+Copy the sample .env file and edit it with the required parameters
+```
+sudo cp .env.example .env
+sudo nano .env
+```
+Set the following parameters, replace the APP_URL with your server's hostname and service passwords with the ones you chose in the previous steps of the installation.
+```
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://<your domain here>
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=remachinon
+DB_USERNAME=remachinon
+DB_PASSWORD=<the mysql password>
+
+MQTT_HOST=127.0.0.1
+MQTT_PORT=1883
+MQTT_USERNAME=remachinon
+MQTT_PASSWORD=<the mosquitto password>
+MQTT_CLIENT_ID=remachinon:
+```
+Also setup your Mail delivery system with your desired settings.
+
+If you want to limit the people that can register new users in the app, you can filter the public IPs that can access to the "User registry" pages with the next directive. Wildcards are allowed.
+```
+ALLOW_REGISTRY_FROM=127.0.0.1
+```
+
+### Installing Composer and Node dependencies
+
+```
+composer install --optimize-autoloader --no-dev
+npm install --save-prod
+npm run prod
+```
+
+### Start site with Artisan
+
+```
+php artisan optimize
+php artisan key:generate
+php artisan migrate
+php artisan passport:install
+```
   
 # Updating  
   
 ```  
-Code  
+cd [remachinon_path]
+git pull
+composer update --optimize-autoloader --no-dev
+nom update --save-prod
+npm run prod
+php artisan optimize
 ```  
-  
+Add any special php artisan command that may be required by new packages, for example
+```
+php artisan vendor:publish --tag=telescope-assets
+```
+** This is just an example. Keep in mind installing Telescope on production requires additional safety steps!!
+
+### Fix permissions
+
+```
+sudo chown -R www-data:www-data ../htdocs
+```
+
+## Start all services
+
+```
+sudo service mosquitto restart
+sudo service apache2 restart
+sudo service mysql restart
+sudo service ssh restart
+```
+
 # Usage  
   
 - Go to the URL of your webserver  
@@ -88,4 +167,12 @@ Code
 - Add a new device using your chosen name, the device's MUID (where is the MUID?) and a description.  
 - Click on the Connect button and follow instructions.  
   
+  
+# Additional libraries
+
+Re:Machinon uses the following libraries and packages (apart from Laravel's default ones)
+- [spatie/laravel-permissions](https://github.com/spatie/laravel-permission) 
+- [bluerhinos/phpmqtt](https://github.com/bluerhinos/phpMQTT)
+- [FortAwesome/fontawesome-free](https://github.com/FortAwesome/Font-Awesome)
+
 > Written with [StackEdit](https://stackedit.io/).
