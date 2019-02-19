@@ -21,10 +21,12 @@ Route::group(['middleware' => 'auth'], function() {
     Route::get('profile/edit', 'UserController@edit')->name('profile.edit');
     Route::get('user/{user}/edit', 'UserController@edit')->name('user.edit');
     Route::patch('user/{user}/update', 'UserController@update')->name('user.update');
-
-    Route::resource('devices', 'DeviceController');
-
-    Route::get('devices/{id}/connect', 'DeviceTunnelController@connect')->name('devices.connect');
+    // Download remachinon server key
+    Route::get('devices/getkey', 'DeviceController@getkey')->name('devices.getkey');
+    // Tunneling routes
+    Route::get('devices/{id}/connect', 'DeviceTunnelController@connect')->middleware('throttle:4,1')->name('devices.connect');
     Route::get('devices/{id}/disconnect', 'DeviceTunnelController@disconnect')->name('devices.disconnect');
     Route::get('tunnels/{id}/status', 'DeviceTunnelController@status')->name('tunnels.status');
+    // Basic CRUD routes
+    Route::resource('devices', 'DeviceController');
 });

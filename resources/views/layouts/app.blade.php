@@ -27,7 +27,9 @@
                 </div>
             </div>
         </main>
-        @include('flash-message')
+        <div class="row m-auto justify-content-center">
+            @include('flash-message')
+        </div>
     </div>
     @yield('modalboxes')
     <!-- Scripts -->

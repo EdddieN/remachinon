@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -15,8 +13,8 @@ use Illuminate\Http\Request;
 
 // Prefix is related to the URL "prefix" used to trigger the route. eg /api/v1/auth/login
 Route::group(['prefix' => 'auth'], function () {
-    Route::post('login', 'AuthController@login');
-    Route::post('signup', 'AuthController@signup')->middleware('ipcheck');
+    Route::post('login', 'AuthController@login')->middleware('throttle:5,1');
+    Route::post('signup', 'AuthController@signup')->middleware('ipcheck:registration');
     Route::get('logout', 'AuthController@logout')->middleware('auth:api');
 });
 
@@ -26,5 +24,12 @@ Route::group(['middleware' => ['auth:api', 'scopes:connect-tunnel']], function()
     Route::put('tunnels/{uuid}/confirm', 'DeviceTunnelController@confirm');
 });
 
-// this should go in console.php
+// These are the three API endpoints that handle mosquitto_auth_plugin authentication and ACL permissions
+Route::group(['prefix' => 'mosquitto'], function () {
+    Route::post('getuser', 'MosquittoController@getuser');
+    Route::post('superuser', 'MosquittoController@superuser');
+    Route::post('aclcheck', 'MosquittoController@aclcheck');
+});
+
+// @todo this should go in console.php
 Route::get('tunnels/cron', 'DeviceTunnelController@cron');

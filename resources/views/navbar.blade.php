@@ -37,6 +37,9 @@
                         <a class="dropdown-item" href="{{ route('profile.edit') }}">
                             {{ __('Edit profile') }}
                         </a>
+                        <a class="dropdown-item" href="{{ route('devices.getkey') }}">
+                            {{ __('Download PEM key file') }}
+                        </a>
                         <a class="dropdown-item" href="{{ route('logout') }}"
                            onclick="event.preventDefault();
                                          document.getElementById('logout-form').submit();">

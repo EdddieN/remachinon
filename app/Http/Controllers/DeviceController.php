@@ -112,4 +112,12 @@ class DeviceController extends Controller
         return redirect()->route('devices.index');
     }
 
+    /**
+     *
+     */
+    public function getkey()
+    {
+        $path = storage_path('remachinon-private.key');
+        return response()->download($path, 'remachinon_rsa_key.pem');
+    }
 }

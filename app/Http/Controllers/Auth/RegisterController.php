@@ -37,7 +37,7 @@ class RegisterController extends Controller
      */
     public function __construct()
     {
-        $this->middleware(['guest','ipcheck'])->except(['edit','update']);
+        $this->middleware(['guest','ipcheck:registration']);
     }
 
     /**

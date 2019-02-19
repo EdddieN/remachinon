@@ -100,7 +100,7 @@
                 method: "GET",
                 dataType: "json",
                 success: function (result) {
-                    statusM.html('Ready!');
+                    statusM.html('Ready! Click the handshake button to proceed.');
                     goM.removeClass('btn-danger btn-warning')
                         .addClass('btn-success')
                         .prop('disabled', false)
