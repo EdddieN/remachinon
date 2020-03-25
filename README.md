@@ -1,7 +1,6 @@
 
 # Re:Machinon - server 
   
-``` WARNING !! Do NOT make this repository public yet !!* ```   
 ## Work in progress  
   
 ReMachinon is a web app created with Laravel framework that allows to register and connect to your Machinon devices remotely from anywhere in the world without any NAT, VPN or complicated router configurations.  
@@ -45,7 +44,10 @@ You can get requirements, installation and setup details in each package's Githu
 You need to setup a VirtualHost on the apache server that contains special dynamic reverse proxy tunneling directives.  
 Use the Hostname, DocumentRoot that fit your needs  
 The proxy file path directive must fit the installation DocumentRoot chosen.  
-  
+
+Addendum: To check how to install the server check the following documentation:
+[Re:Machinon access install guide](https://github.com/EdddieN/machinon/blob/master/documentation/remachinon_access_install_guide.md)
+
 ```  
 TODO  
 ```  
