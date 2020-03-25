@@ -177,4 +177,9 @@ Re:Machinon uses the following libraries and packages (apart from Laravel's defa
 - [bluerhinos/phpmqtt](https://github.com/bluerhinos/phpMQTT)
 - [FortAwesome/fontawesome-free](https://github.com/FortAwesome/Font-Awesome)
 
+# License
+
+This software is licensed under the [GPLv3 License](https://www.gnu.org/licenses/gpl-3.0.html)
+Check LICENSE file for full details.
+
 > Written with [StackEdit](https://stackedit.io/).
